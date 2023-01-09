@@ -1,84 +1,109 @@
 import pygame
+import random
 
 # Připravíme PyGame
 pygame.init()
-pygame.display.set_caption("..Letadýlko")
-size = (300, 200)
-screen = pygame.display.set_mode(size)
+pygame.display.set_caption("   Letadýlková Game")
+screen = pygame.display.set_mode((600, 400))
 clock = pygame.time.Clock()
 
 # Připravíme si obrázek
-background = (150, 150, 150)
+background = (200, 200, 200)
 auto = pygame.image.load("auto.png")
 auto = pygame.transform.scale(auto, (40, 40))
-rotated_auto = pygame.transform.rotate(auto, 0)
+df = pygame.image.load("df.png")
+df = pygame.transform.scale(df, (40, 40))
 
-WIDTH = 6
-HEIGHT = 4
+WIDTH = 8
+HEIGHT = 6
 
-zx = 0
-zy = 0
-
+auto_x = 2
+auto_y = 1
 
 def game_to_screen(x, y):
-    return (x * 51, y * 51)
+    return (x * 45 + 10, y * 45 + 10)
 
-
-def animate(nx, ny):
-    global zx, zy
+def move_auto(nx, ny):
+    global auto_x, auto_y
 
     duration = 2000
-
     t = 0
-    #Obrázkové souradnice
-    sx, sy = game_to_screen(zx, zy)
+    # Obrazovkove souradnice
+    sx, sy = game_to_screen(auto_x, auto_y)
     ex, ey = game_to_screen(nx, ny)
     while t < duration:
-        new = t / duration  #0...1
+        new = t / duration  # 0...1
         old = 1 - new
         x = old * sx + new * ex
         y = old * sy + new * ey
-        screen.fill(background)
-        draw_grid()
+        draw_scene()
         screen.blit(rotated_auto, (x, y))
         pygame.display.update()
         t = t + clock.tick()
 
-    zx = nx
-    zy = ny
+    auto_x = nx
+    auto_y = ny
+    check_dfs()
 
+    
 
-def draw_grid():
+pa_x = 0
+pa_y = 0
+dfs = [(0, 0), (5, 1), (0, 2)]
+score = 0
+
+def draw_scene():
+    screen.fill(background)
     for x in range(WIDTH):
-        for y in range(HEIGHT):
+        for y in range(HEIGHT):                    
             color = (255, 255, 255)
             rect = (game_to_screen(x, y), (40, 40))
             pygame.draw.rect(screen, color, rect)
+    for pa in dfs:
+        pa_x, pa_y = pa
+        screen.blit(df, game_to_screen(pa_x, pa_y))
+    font = pygame.font.Font(None, 42)
+    text = font.render(f"Score: {score}", True, (0, 0, 0), (255, 255, 0))
+    screen.blit(text, (20, 300))
 
+def check_dfs():
+    global dfs
+    global score
+    new = []
+    for pa in dfs:
+        if pa == (auto_x, auto_y):
+            score = score + 1
+        else:
+            new.append(pa)
+    dfs = new
 
+countdown = 5
+rotated_auto = pygame.transform.rotate(auto, 0)
 while True:
     # Vykreslíme
-    screen.fill(background)
-    draw_grid()
-    screen.blit(rotated_auto, game_to_screen(zx, zy))
-
+    draw_scene()
+    screen.blit(rotated_auto, game_to_screen(auto_x, auto_y))
     pygame.display.update()
 
     event = pygame.event.wait()
     if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_d:
             rotated_auto = pygame.transform.rotate(auto, 270)
-            if zx < WIDTH - 1:
-                animate(zx + 1, zy)
+            if auto_x < WIDTH - 1:
+                move_auto(auto_x + 1, auto_y)
         elif event.key == pygame.K_w:
             rotated_auto = pygame.transform.rotate(auto, 0)
-            if zy > 0:
-                animate(zx, zy - 1)
-        elif event.key == pygame.K_s:
-            rotated_auto = pygame.transform.rotate(auto, 180)
-            if zy < HEIGHT - 1:
-                animate(zx, zy + 1)
+            if auto_y > 0:
+                move_auto(auto_x, auto_y - 1)
         elif event.key == pygame.K_a:
             rotated_auto = pygame.transform.rotate(auto, 90)
-            if zx > 0:
-                animate(zx - 1, zy)
+            if auto_x > 0:
+                move_auto(auto_x - 1, auto_y)
+        elif event.key == pygame.K_s:
+            rotated_auto = pygame.transform.rotate(auto, 180)
+            if auto_y < HEIGHT - 1:
+                move_auto(auto_x, auto_y + 1)
+
+    if (auto_x, auto_y) == (pa_x, pa_y):
+        pa_x = random.randrange(0, WIDTH)
+        pa_y = random.randrange(0, HEIGHT)
